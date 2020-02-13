@@ -1,8 +1,8 @@
 import { getManager } from 'typeorm'
 import VenueRepository from '../repository/VenueRepository'
 import { Area } from '../model/Area'
-import { getDistance } from 'geolib';
-import { ConcertInfo } from '../model/ConcertInfo';
+import { getDistance } from 'geolib'
+import { ConcertInfo } from '../model/ConcertInfo'
 
 async function getConcertsByBandIds(bandIds: string) {
   // bandIds should be in the 'params' parameter, I know (same for venueIds)
@@ -16,7 +16,7 @@ async function getConcertsByBandIds(bandIds: string) {
 
 async function getConcertsWithinArea(area: Area) {
   const venueRepo = getManager().getCustomRepository(VenueRepository)
-  const venueIds = venueRepo.getVenuesWithinArea(area).map(venue => venue.id).join(','))
+  const venueIds = venueRepo.getVenuesWithinArea(area).map(venue => venue.id).join(',')
   if(!venueIds) {
     return []
   }
