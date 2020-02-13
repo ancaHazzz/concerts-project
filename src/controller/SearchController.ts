@@ -29,7 +29,6 @@ async function getConcertsWithinArea(area: Area) {
 }
 
 export async function getFilteredConcerts(bandIds: string, area?: Area) {
-  console.debug(bandIds)
   if (bandIds && area) {
     const concertsByBandIds = await getConcertsByBandIds(bandIds)
     return concertsByBandIds.filter(concert => getDistance(concert, area) < area.radius * 1000)
