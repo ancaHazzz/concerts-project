@@ -1,13 +1,15 @@
 import express, { Application, Request, Response, NextFunction } from 'express'
 import bodyParser from 'body-parser'
-import { getConcertInfos } from './controllers/searchController'
-import R from 'ramda'
+import { getFilteredConcerts } from './controller/SearchController'
+import { getArea, validateAreaParams } from './model/Area'
+import * as db from './Database'
 
 const app: Application = express()
 const PORT = process.env.PORT || 3000
 
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
+db.init()
 
 app.get('/', (req: Request, res: Response) => {
   res.send(`To search for concerts use the /concerts path with the following params:
@@ -15,30 +17,32 @@ app.get('/', (req: Request, res: Response) => {
   --- and/or ---
   latitude: float
   longitude: float
-  radius: Int - In kilometers 
+  radius: int - In kilometers 
   `)
 })
 
-app.get('/concerts', (req: Request, res: Response) => {
-  const params = req.query
-  // TODO: Add a validator
-  if (!params.bandIds && !params.latitude) {
-    res.status(400).json({
-      error: `At least one of the following is required:
-    bandIds or latitude,longitude & radius`
-    })
-    return
+app.get('/concerts', async (req: Request, res: Response) => {
+  try {
+    if (!validateAreaParams(req.query)) {
+      res.status(400).json({
+        error: `You must provide all or none of the following fields: latitude: float, longitude: float, radius: int [km]`
+      })
+      return
+    }
+    // should also check the params type/format
+    const bandIds = req.query.bandIds
+    const area = getArea(req.query)
+    if (!bandIds && !area) {
+      res.status(400).json({
+        error: `At least one of the following is required: bandIds or latitude,longitude & radius`
+      })
+      return
+    }
+    let results = await getFilteredConcerts(bandIds, area)
+    res.send(results)
+  } catch (error) {
+    res.status(500).json({ error: error.toString() })
   }
-  const locationConstraints = [params.latitude, params.longitude, params.radius]
-  if (locationConstraints.some(x => R.isNil(x)) && locationConstraints.some(x => !R.isNil(x))) {
-    res.status(400).json({
-      error: `You must provide all or none of the following fields: latitude,longitude & radius`
-    })
-    return
-  }
-  const bandIds = params.bandIds.split(',').map((x: string) => Number.parseInt(x))
-  const results = getConcertInfos(bandIds, params.latitude, params.longitude, params.radius)
-  res.send(results)
 })
 
 app.listen(PORT, () => {
